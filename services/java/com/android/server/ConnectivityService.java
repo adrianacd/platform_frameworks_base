@@ -264,6 +264,8 @@ public class ConnectivityService extends IConnectivityManager.Stub {
     private Object mDnsLock = new Object();
     private int mNumDnsEntries;
 
+    private boolean mMultipathCapable = false;
+
     private boolean mTestMode;
     private static ConnectivityService sServiceInstance;
 
@@ -478,6 +480,10 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         } catch (IllegalArgumentException e) {
             loge("Error setting defaultDns using " + dns);
         }
+
+	File mptcpFile = new File("/proc/net/mptcp_pm");
+	if (mptcpFile.exists())
+		mMultipathCapable = true;
 
         mContext = checkNotNull(context, "missing Context");
         mNetd = checkNotNull(netManager, "missing INetworkManagementService");
@@ -1636,6 +1642,8 @@ public class ConnectivityService extends IConnectivityManager.Stub {
 
     private boolean modifyRoute(LinkProperties lp, RouteInfo r, int cycleCount, boolean doAdd,
             boolean toDefaultTable, boolean exempt) {
+        if (mMultipathCapable)
+            toDefaultTable = false;
         if ((lp == null) || (r == null)) {
             if (DBG) log("modifyRoute got unexpected null: " + lp + ", " + r);
             return false;
@@ -2261,8 +2269,9 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         // if this is a default net and other default is running
         // kill the one not preferred
         if (mNetConfigs[newNetType].isDefault()) {
-            if (mActiveDefaultNetwork != -1 && mActiveDefaultNetwork != newNetType) {
+            if (mActiveDefaultNetwork != -1 && mActiveDefaultNetwork != newNetType && !mMultipathCapable) {
                 if (isNewNetTypePreferredOverCurrentNetType(newNetType)) {
+        
                     // tear down the other
                     NetworkStateTracker otherNet =
                             mNetTrackers[mActiveDefaultNetwork];
