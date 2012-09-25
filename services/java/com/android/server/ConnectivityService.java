@@ -2425,7 +2425,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
      *  - When WiFi is not available then a default route and DNS resolver
      *    must exist if an other connectivity is available.
      */
-    private void multipathConnectivityChange(int netType, boolean doReset) {
+    private boolean multipathConnectivityChange(int netType, boolean doReset) {
         /* Always prefers going through WiFi when MPTCP capable */
         if (mNetTrackers[ConnectivityManager.TYPE_WIFI] != null &&
             mNetTrackers[ConnectivityManager.TYPE_WIFI].getNetworkInfo().isAvailable()) {
@@ -2474,7 +2474,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         }
 
         if (mMultipathCapable)
-            if (multipathConnectivityChange(netType))
+            if (multipathConnectivityChange(netType, doReset))
                 return;
 
         /*
